@@ -1,4 +1,3 @@
-from functools import reduce
 from itertools import accumulate
 
 def next(current_pos, step):
