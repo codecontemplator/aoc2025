@@ -1,18 +1,16 @@
 from functools import reduce
+from itertools import accumulate
 
-
-def fold_step(acc, step):
-    pos, zeros = acc
-    direction, value = step
-    new_pos = (pos + value) % 100 if direction == "R" else (pos - value) % 100
-    new_zeros = zeros + (1 if new_pos == 0 else 0)
-    return (new_pos, new_zeros)
-
+def next(current_pos, step):
+    direction, value = step    
+    sign = 1 if direction == "R" else -1    
+    return (current_pos + sign * value) % 100
 
 with open("input.txt", "r") as f:
     lines = f.read().splitlines() 
 
 steps = [(line[0], int(line[1:])) for line in lines]
-start = (50, 0)
-final_pos, zero_count = reduce(fold_step, steps, start)
-print(final_pos, zero_count)
+positions = accumulate(steps, func=next, initial=50)
+zero_count = sum(1 for pos in positions if pos == 0)
+
+print(zero_count)
