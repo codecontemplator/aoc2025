@@ -1,9 +1,6 @@
 with open("input.txt", "r") as file:
     rows = file.read().splitlines()
 
-def mknum(row, i, j, k):
-    return int(''.join([ ch for p, ch in enumerate(row) if p not in (i, j, k) ]))
-
 def process_row(rowin):
     row = list(map(int, list(rowin)))
     rowlen = len(row)
