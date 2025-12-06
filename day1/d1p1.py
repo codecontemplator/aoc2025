@@ -1,12 +1,12 @@
 from itertools import accumulate
 
 def next(current_pos, step):
-    direction, value = step    
-    sign = 1 if direction == "R" else -1    
+    direction, value = step
+    sign = 1 if direction == "R" else -1
     return (current_pos + sign * value) % 100
 
 with open("input.txt", "r") as f:
-    lines = f.read().splitlines() 
+    lines = f.read().splitlines()
 
 steps = [(line[0], int(line[1:])) for line in lines]
 positions = accumulate(steps, func=next, initial=50)
