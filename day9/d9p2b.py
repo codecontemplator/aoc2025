@@ -49,23 +49,8 @@ with open('input.txt', 'r') as file:
     corners = list(map(lambda x: tuple(map(int,x.split(','))),file.read().splitlines()))
 
 corners.append(corners[0])  # Close the loop
-
-    
-# for y in range(9):
-#     tmp = 14 * '.'
-#     if y in intervals:
-#         (xmin, xmax) = intervals[y]
-#         tmp = list(tmp)
-#         for x in range(xmin, xmax + 1):
-#             tmp[x] = '#'
-#         tmp = ''.join(tmp)
-#     print(tmp)
-
-print("1")
 intervals = make_intervals(corners)
-print("2")
 rectangles = [(corners[i],corners[j]) for i in range(len(corners)-1) for j in range(i+1,len(corners))]
-print("3")
 
 #covered_rectangles = [r for r in rectangles if is_covered(r, intervals)]    
 covered_rectangles = []
@@ -76,8 +61,6 @@ for r in rectangles:
         print(f"{i} / {len(rectangles)}")
     if is_covered(r, intervals):
         covered_rectangles.append(r)
-
-print(len(covered_rectangles))
 
 mr = max(covered_rectangles, key=area)
 print(area(mr))

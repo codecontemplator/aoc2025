@@ -1,60 +1,85 @@
-def get_intervals(corners):
-    ycs = sorted(corners, key=lambda x: x[1])
+def area(rectangle):
+    return (1+abs(rectangle[1][0]-rectangle[0][0]))*(1+abs(rectangle[1][1]-rectangle[0][1]))
 
-    pairs = list(zip(ycs[::2], ycs[1::2]))
+def make_intervals(corners):
+    corner_pairs = list(zip(corners, corners[1:]))
 
-    intervals = []
-    for p in pairs: 
-        (c1,c2) = p
-        if c1[1] != c2[1]:
-            raise ValueError("Unexpected y-coordinates")
-        iv = min(c1[0],c2[0]), max(c1[0],c2[0])
-        intervals.append((c1[1], iv))
+    intervals = {}
+    for c1,c2 in corner_pairs:
+        x1, y1 = c1
+        x2, y2 = c2
+        if x1 == x2:  # Vertical line
+            ymin, ymax = sorted([y1, y2])
+            for y in range(ymin, ymax + 1):
+                if y not in intervals:
+                    intervals[y] = (x1, x1)
+                else:
+                    (xmin, xmax) = intervals[y]
+                    intervals[y] = (min(xmin, x1), max(xmax, x1))
+        elif y1 == y2:  # Horizontal line
+            y = y1
+            xmin, xmax = sorted([x1, x2])
+            if y not in intervals:
+                intervals[y] = (xmin, xmax)
+            else:
+                (cur_xmin, cur_xmax) = intervals[y]
+                intervals[y] = (min(cur_xmin, xmin), max(cur_xmax, xmax))
+        else:
+            raise ValueError("Only horizontal or vertical lines are supported")
 
     return intervals
 
-def fill(intervals):
-    (yc, (xmin, xmax))  = intervals.pop(0)
+def is_covered(rectangle, intervals):
+    (c1, c2) = rectangle
+    x1, y1 = c1
+    x2, y2 = c2
+    ymin, ymax = sorted([y1, y2])
+    xmin, xmax = sorted([x1, x2])
 
-    result = [(yc, (xmin, xmax))]
-    while True:
-        if not intervals:
-            break
-        
-        (y_next, (xmin_next, xmax_next)) = intervals.pop(0)
-        for y in range(yc+1, y_next):
-            result.append((y, (xmin, xmax)))
-        yc = y_next
-        if xmin_next < xmin:
-            xmin = xmin_next
-        else:
-            
-        xmin = min(xmin, xmin_next)
-        xmax = max(xmax, xmax_next)
-        result.append((yc, (xmin, xmax)))
+    for y in range(ymin, ymax + 1):
+        if y not in intervals:
+            return False
+        (int_xmin, int_xmax) = intervals[y]
+        if int_xmin > xmin or int_xmax < xmax:
+            return False
 
-    return result
+    return True
 
-with open('example.txt', 'r') as file:
+with open('input.txt', 'r') as file:
     corners = list(map(lambda x: tuple(map(int,x.split(','))),file.read().splitlines()))
 
-intervals = get_intervals(corners)
-filled = fill(intervals)
+corners.append(corners[0])  # Close the loop
 
-for iv in filled:
-    print(iv)
+    
+# for y in range(9):
+#     tmp = 14 * '.'
+#     if y in intervals:
+#         (xmin, xmax) = intervals[y]
+#         tmp = list(tmp)
+#         for x in range(xmin, xmax + 1):
+#             tmp[x] = '#'
+#         tmp = ''.join(tmp)
+#     print(tmp)
 
+print("1")
+intervals = make_intervals(corners)
+print("2")
+rectangles = [(corners[i],corners[j]) for i in range(len(corners)-1) for j in range(i+1,len(corners))]
+print("3")
 
-"""
-print(yc)    
+#covered_rectangles = [r for r in rectangles if is_covered(r, intervals)]    
+covered_rectangles = []
+i = 0
+for r in rectangles:
+    i += 1
+    if i % 1000 == 0:
+        print(f"{i} / {len(rectangles)}")
+    if is_covered(r, intervals):
+        covered_rectangles.append(r)
 
-yranges = []
+print(len(covered_rectangles))
 
-c1 = yc.pop(0)
-c2 = yc.pop(0)
-if c1[1] != c2[1]:
-    raise ValueError("Unexpected y-coordinates")
-y = 
-(xmin,xmax) = (min(c1[0],c2[0]),max(c1[0],c2[0]))
-for c in yc:
-"""
+mr = max(covered_rectangles, key=area)
+print(area(mr))
+
+#1516172795
