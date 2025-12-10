@@ -1,7 +1,7 @@
 import numpy 
 import sympy as sp
 
-with open('example.txt', 'r') as f:
+with open('input.txt', 'r') as f:
     rows = f.read().splitlines()
 
 def parse_btn(s):
@@ -40,6 +40,8 @@ total_sum = 0
 rowcnt = 0
 for (btns, goal) in parsed_rows:
     rowcnt += 1
+   # if rowcnt < 157:
+  #      continue;
     print(f"{rowcnt} / {len(parsed_rows)}")
 
     M = to_matrix(btns, len(goal))
@@ -56,29 +58,40 @@ for (btns, goal) in parsed_rows:
         # Start with particular solution (params = 0)
         particular_sol = sol_vec.subs(dict(zip(params, [0]*len(params))))
         
-        # Use a limited search range to keep it fast
-        search_range = 5  # Small fixed range
+        # Use a limited search range to keep it fast, but increase if needed
+        search_range = 5  # Start with small range
+        max_search_range = 100  # Maximum range to try
         
         from itertools import product
-        param_ranges = [range(-search_range, search_range + 1) for _ in params]
         
-        for param_values in product(*param_ranges):
-            param_dict = dict(zip(params, param_values))
-            concrete_sol = sol_vec.subs(param_dict)
+        while best_solution is None and search_range <= max_search_range:
+            param_ranges = [range(-search_range, search_range + 1) for _ in params]
             
-            # Check if all values are non-negative integers (or close to integers)
-            try:
-                int_sol = [int(val) for val in concrete_sol]
-                if all(abs(val - int(val)) < 0.001 and val >= 0 for val in concrete_sol):
-                    sol_sum = sum(int_sol)
-                    if sol_sum < min_sum:
-                        min_sum = sol_sum
-                        best_solution = int_sol
-            except:
-                continue
+            for param_values in product(*param_ranges):
+                param_dict = dict(zip(params, param_values))
+                concrete_sol = sol_vec.subs(param_dict)
+                
+                # Check if all values are non-negative integers (or close to integers)
+                try:
+                    int_sol = [int(val) for val in concrete_sol]
+                    if all(abs(val - int(val)) < 0.001 and val >= 0 for val in concrete_sol):
+                        sol_sum = sum(int_sol)
+                        if sol_sum < min_sum:
+                            min_sum = sol_sum
+                            best_solution = int_sol
+                except:
+                    continue
+            
+            if best_solution is None:
+                print(f"No solution found with range {search_range}, increasing to {search_range * 2}...")
+                search_range *= 2
         
-        print(f"Best solution: {best_solution}, sum: {min_sum}")
-        total_sum += min_sum
+        if best_solution is not None:
+            print(f"Best solution: {best_solution}, sum: {min_sum}")
+            total_sum += min_sum
+        else:
+            print(f"WARNING: No valid solution found even with search range {max_search_range}!")
+            # Could skip this row or handle differently
     else:
         # Unique solution
         print(f"Unique solution: {sol_vec}, sum: {sum(sol_vec)}")
