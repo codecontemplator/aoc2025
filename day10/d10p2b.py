@@ -51,16 +51,29 @@ for (btns, goal) in parsed_rows:
     
     # Find the smallest solution by trying different parameter values
     if params:
-        # Use a much smaller, focused search range
         min_sum = float('inf')
         best_solution = None
         
-        # Start with particular solution (params = 0)
-        particular_sol = sol_vec.subs(dict(zip(params, [0]*len(params))))
+        # Convert sympy solution to numpy for faster computation
+        # Extract the particular solution and null space vectors
+        n_params = len(params)
+        n_vars = len(sol_vec)
+        
+        # Get particular solution (all params = 0)
+        particular = numpy.array([float(val) for val in sol_vec.subs(dict(zip(params, [0]*n_params)))], dtype=float)
+        
+        # Get null space basis vectors (coefficient of each parameter)
+        null_space = []
+        for i, param in enumerate(params):
+            param_vals = [1 if j == i else 0 for j in range(n_params)]
+            vec = numpy.array([float(sol_vec[j].subs(dict(zip(params, param_vals)))) - particular[j] 
+                              for j in range(n_vars)], dtype=float)
+            null_space.append(vec)
+        null_space = numpy.array(null_space).T  # Shape: (n_vars, n_params)
         
         # Use a limited search range to keep it fast, but increase if needed
         search_range = 5  # Start with small range
-        max_search_range = 100  # Maximum range to try
+        max_search_range = 200  # Maximum range to try
         
         from itertools import product
         
@@ -68,19 +81,17 @@ for (btns, goal) in parsed_rows:
             param_ranges = [range(-search_range, search_range + 1) for _ in params]
             
             for param_values in product(*param_ranges):
-                param_dict = dict(zip(params, param_values))
-                concrete_sol = sol_vec.subs(param_dict)
+                # Fast numpy computation: particular + null_space @ param_values
+                concrete_sol = particular + null_space @ numpy.array(param_values, dtype=float)
                 
                 # Check if all values are non-negative integers (or close to integers)
-                try:
-                    int_sol = [int(val) for val in concrete_sol]
-                    if all(abs(val - int(val)) < 0.001 and val >= 0 for val in concrete_sol):
-                        sol_sum = sum(int_sol)
+                if numpy.all(numpy.abs(concrete_sol - numpy.round(concrete_sol)) < 0.001):
+                    int_sol = numpy.round(concrete_sol).astype(int)
+                    if numpy.all(int_sol >= 0):
+                        sol_sum = int(numpy.sum(int_sol))
                         if sol_sum < min_sum:
                             min_sum = sol_sum
-                            best_solution = int_sol
-                except:
-                    continue
+                            best_solution = int_sol.tolist()
             
             if best_solution is None:
                 print(f"No solution found with range {search_range}, increasing to {search_range * 2}...")
