@@ -1,0 +1,92 @@
+import numpy 
+import sympy as sp
+
+with open('example.txt', 'r') as f:
+    rows = f.read().splitlines()
+
+def parse_btn(s):
+    return  list(map(int,s.strip("()").split(",")))
+
+def parse_goal(s):
+    goal = 0
+    for i in range(len(s)):
+        if s[i] == '#':
+            goal += 2**i
+    return goal
+
+def parse_row(s):
+    i1 = s.index("]") + 1
+    i2 = s.index("{") - 1
+    p1 = s[1:i1-1]
+    p2 = s[i1+1:i2]
+    p3 = s[i2+2:-1]
+    p1f = parse_goal(p1)
+    p2f = list(map(parse_btn, p2.split(" ")))
+    p3f = list(map(int,p3.split(",")))
+    return (p2f, p3f )  # btns, goal
+
+def to_matrix(btns, dim):
+    M = []
+    for btn in btns:
+        r = [ 0 for i in range(dim) ]
+        for i in btn:
+            r[i] = 1
+        M.append(r)
+    return M
+
+parsed_rows = [ parse_row(row) for row in rows ]
+
+total_sum = 0
+rowcnt = 0
+for (btns, goal) in parsed_rows:
+    rowcnt += 1
+    print(f"{rowcnt} / {len(parsed_rows)}")
+
+    M = to_matrix(btns, len(goal))
+    M2 = sp.Matrix(M).transpose()
+    b2 = sp.Matrix(goal)
+    sol_vec, params = M2.gauss_jordan_solve(b2)
+    
+    # Find the smallest solution by trying different parameter values
+    if params:
+        # Use a much smaller, focused search range
+        min_sum = float('inf')
+        best_solution = None
+        
+        # Start with particular solution (params = 0)
+        particular_sol = sol_vec.subs(dict(zip(params, [0]*len(params))))
+        
+        # Use a limited search range to keep it fast
+        search_range = 5  # Small fixed range
+        
+        from itertools import product
+        param_ranges = [range(-search_range, search_range + 1) for _ in params]
+        
+        for param_values in product(*param_ranges):
+            param_dict = dict(zip(params, param_values))
+            concrete_sol = sol_vec.subs(param_dict)
+            
+            # Check if all values are non-negative integers (or close to integers)
+            try:
+                int_sol = [int(val) for val in concrete_sol]
+                if all(abs(val - int(val)) < 0.001 and val >= 0 for val in concrete_sol):
+                    sol_sum = sum(int_sol)
+                    if sol_sum < min_sum:
+                        min_sum = sol_sum
+                        best_solution = int_sol
+            except:
+                continue
+        
+        print(f"Best solution: {best_solution}, sum: {min_sum}")
+        total_sum += min_sum
+    else:
+        # Unique solution
+        print(f"Unique solution: {sol_vec}, sum: {sum(sol_vec)}")
+        total_sum += sum(sol_vec)
+    #a, residuals, rank, s = numpy.linalg.lstsq(MT, b, rcond=None)   
+    
+
+#print(parsed_rows)
+#a, residuals, rank, s = numpy.linalg.lstsq(M, b, rcond=None)
+
+print(total_sum)
