@@ -1,7 +1,7 @@
 import numpy 
 import sympy as sp
 
-with open('input.txt', 'r') as f:
+with open('example.txt', 'r') as f:
     rows = f.read().splitlines()
 
 def parse_btn(s):
@@ -36,12 +36,14 @@ def to_matrix(btns, dim):
 
 parsed_rows = [ parse_row(row) for row in rows ]
 
+# 196, 156
 total_sum = 0
 rowcnt = 0
 for (btns, goal) in parsed_rows:
     rowcnt += 1
-   # if rowcnt < 157:
-  #      continue;
+    #if rowcnt != 156 and rowcnt != 196:
+    #    print("skipping")
+    #    continue;
     print(f"{rowcnt} / {len(parsed_rows)}")
 
     M = to_matrix(btns, len(goal))
@@ -78,7 +80,7 @@ for (btns, goal) in parsed_rows:
         from itertools import product
         
         while best_solution is None and search_range <= max_search_range:
-            param_ranges = [range(-search_range, search_range + 1) for _ in params]
+            param_ranges = [range(0, search_range + 1) for _ in params]
             
             for param_values in product(*param_ranges):
                 # Fast numpy computation: particular + null_space @ param_values
@@ -114,3 +116,12 @@ for (btns, goal) in parsed_rows:
 #a, residuals, rank, s = numpy.linalg.lstsq(M, b, rcond=None)
 
 print(total_sum)
+
+# 20247  
+# 164
+# 337
+
+# too high
+
+# 20584
+# too high
