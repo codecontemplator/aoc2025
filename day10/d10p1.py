@@ -1,4 +1,4 @@
-with open('example.txt', 'r') as f:
+with open('input.txt', 'r') as f:
     rows = f.read().splitlines()
 
 def parse_btn(s):
@@ -27,25 +27,31 @@ def parse_row(s):
 #btns = list(map(lambda x: sum([ 2**i for i in x]), btns_orig))
 
 def search(goal, btns, lights, pressed, cnt, g_min_cnt):
-
-    if g_min_cnt is not None and cnt >= g_min_cnt:
-        return (None,None)
-
-    if lights == goal:
-        return (cnt, pressed)
+    from collections import deque
     
-    min_cnt = None
-    final_result = None
-    for i, btn in enumerate(btns):
-        if pressed[i] < 2:
-            pressed2 = pressed | {i: pressed[i] + 1}
-            cnt_result, pressed_result = search(goal, btns, lights ^ btn, pressed2, cnt+1, min_cnt)
-            if cnt_result is None:
-                continue
-            if min_cnt is None or cnt_result < min_cnt:
-                min_cnt = cnt_result
-                final_result = pressed_result
-    return (min_cnt, final_result)
+    queue = deque([(lights, pressed, cnt)])
+    visited = {(lights, tuple(sorted(pressed.items())))}
+    
+    while queue:
+        lights, pressed, cnt = queue.popleft()
+        
+        if lights == goal:
+            return (cnt, pressed)
+        
+        if g_min_cnt is not None and cnt >= g_min_cnt:
+            continue
+        
+        for i, btn in enumerate(btns):
+            if pressed[i] < 2:
+                pressed2 = pressed | {i: pressed[i] + 1}
+                new_lights = lights ^ btn
+                state = (new_lights, tuple(sorted(pressed2.items())))
+                
+                if state not in visited:
+                    visited.add(state)
+                    queue.append((new_lights, pressed2, cnt + 1))
+    
+    return (None, None)
 
 
 # (cnt,pressed) = search(0, dict([(i,0) for i in range(len(btns))]), 0, None)
