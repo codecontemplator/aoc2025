@@ -1,14 +1,15 @@
-#with open('example.txt', 'r') as f:
-#    rows = f.read().splitlines()
+with open('example.txt', 'r') as f:
+    rows = f.read().splitlines()
 
 def parse_btn(s):
-    return list(map(int,s.strip("()").split(",")))
+    return  list(map(int,s.strip("()").split(",")))
+    #return sum([ 2**i for i in bits])
 
 def parse_goal(s):
-    goal = set()
+    goal = 0
     for i in range(len(s)):
         if s[i] == '#':
-            goal.add(i)
+            goal += 2**i
     return goal
 
 def parse_row(s):
@@ -22,36 +23,23 @@ def parse_row(s):
     p3f = list(map(int,p3.split(",")))
     return (p1f, p2f, p3f)
 
-goal, btns, _ = parse_row("[.##.] (3) (1,3) (2) (2,3) (0,2) (0,1) {3,5,4,7}");
+#goal, btns_orig, _ = parse_row("[.##.] (3) (1,3) (2) (2,3) (0,2) (0,1) {3,5,4,7}");
+#btns = list(map(lambda x: sum([ 2**i for i in x]), btns_orig))
 
-def update_lights(lights, btn):
-    new_lights = set(lights)
-    for i in btn:
-        if i in lights:
-            new_lights.remove(i)
-        else:
-            new_lights.add(i)
-    return new_lights
+def search(goal, btns, lights, pressed, cnt, g_min_cnt):
 
-def press_btn(pressed, i):
-    pressed2 = dict(pressed)
-    pressed2[i] += 1
-    return pressed2
-
-def search(lights, btn_state, g_min_cnt):
-    #print(lights, btn_state)
-    if lights == goal:
-        return btn_state
-        
-    (cnt,pressed) = btn_state
     if g_min_cnt is not None and cnt >= g_min_cnt:
-        return (None, None)
+        return (None,None)
+
+    if lights == goal:
+        return (cnt, pressed)
     
     min_cnt = None
     final_result = None
-    for i in range(len(btns)):
+    for i, btn in enumerate(btns):
         if pressed[i] < 2:
-            cnt_result, pressed_result = search(update_lights(lights, btns[i]), (cnt+1, press_btn(pressed, i)), min_cnt)
+            pressed2 = pressed | {i: pressed[i] + 1}
+            cnt_result, pressed_result = search(goal, btns, lights ^ btn, pressed2, cnt+1, min_cnt)
             if cnt_result is None:
                 continue
             if min_cnt is None or cnt_result < min_cnt:
@@ -59,16 +47,21 @@ def search(lights, btn_state, g_min_cnt):
                 final_result = pressed_result
     return (min_cnt, final_result)
 
-# lights = set()
-# print(lights)
-# lights = update_lights(lights, btns[0])
-# print(lights)
-# lights = update_lights(lights, btns[0])
-# print(lights)
-# lights = update_lights(lights, btns[1])
-# print(lights)
-# lights = update_lights(lights, btns[0])
-# print(lights)
- 
-pressed = search(set(), (0, dict([(i,0) for i in range(len(btns))])), None)
-print(pressed)
+
+# (cnt,pressed) = search(0, dict([(i,0) for i in range(len(btns))]), 0, None)
+# print(pressed)
+# for i,cnt in pressed.items():
+#     if cnt > 0:
+#         print(f"{btns_orig[i]} * {cnt}")
+
+parsed_rows = [ parse_row(row) for row in rows ]
+total_cnt = 0
+for goal, btns_orig, _ in parsed_rows:
+    btns = [ sum([ 2**i for i in btn]) for btn in btns_orig]
+    no_lights = 0
+    no_pressed = dict([(i,0) for i in range(len(btns))])
+    cnt, _ = search(goal, btns, no_lights, no_pressed, 0, None)
+    print(cnt)
+    total_cnt += cnt
+
+print("=", total_cnt)    
