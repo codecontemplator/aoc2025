@@ -38,8 +38,26 @@ def print_shape(grid):
 with open('example.txt','r') as f:
     lines = f.read().splitlines()
 
+def search(shapes_to_place):
+    shape_to_place = shapes_to_place.select_by_min_available_cancidates()
+    if shape_to_place is None:
+        return True # no more shapes to place, we were successful
+    
+    candidates = get_candidates_for_shape(shape_to_place)
+    if len(candidates) == 0:
+        return False # no avaialbe position
 
+    for candidate in candidates:
+        place(candidate)
+        result = search(...)
+        if result == True:
+            return True   # success
+        unplace(candidate)
 
+    return False # no candidate was successful
+
+# contradictions: min num horizontal/vertical bits to place less than available horitzontal/vertical bits left
+# idea: keep track of legal placements for all shapes with variants. when placing a shape re-evaluate the legal placement. if one of the shapes that are left to place have no legal place left we reach a contradiction
 
 shapes, regions = parse(lines)
 print_shape(shapes[0])
