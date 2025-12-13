@@ -46,13 +46,14 @@ def print_shape(grid):
 
 class Board:
     def __init__(self, width, height, num_shapes, shape_dim = 3):
+        self.shape_dim = shape_dim
         self.width = width
         self.height = height
         all_shapes = [ 
-            (shapeindex, rotation, variant) 
+            (shapeindex, (rotation, flip)) 
                 for shapeindex in range(num_shapes)
                     for rotation in range(4)
-                        for variant in range(2)            
+                        for flip in range(2)            
             ]
         # in the beginning all shapes are candidates for all positions        
         self.candidates = [ [ all_shapes for _ in range(width-shape_dim+1)] for _ in range(height-shape_dim+1) ] 
@@ -60,7 +61,17 @@ class Board:
         self.num_candidates = dict([ (shapeindex, max_candidates) for shapeindex in range(num_shapes) ])
 
     def get_candidates_for_shape(self, shapes_to_place):
-        return sorted(shapes_to_place, key=lambda shapeindex: self.num_candidates[shapeindex])[0]
+        nrows = len(self.candidates)
+        ncols = len(self.candidates[0])
+        assert(nrows == self.height-self.shape_dim+1)
+        assert(ncols == self.width-self.shape_dim+1)
+        return [
+            ((i,j), (shapeindex, variant))
+             for j in range(nrows)
+                for i in range(ncols)
+                    for (shapeindex, variant) in self.candidates[j][i]
+                        if shapeindex == shapes_to_place
+        ]
                 
 class PresentsToPlace:
     def __init__(self, shape_counters):
@@ -83,7 +94,7 @@ def search(board, presents_to_place):
         return True # nothing more to place, we were successful
 
     for shape_to_attempt_to_place in shapes_to_place:
-        presents_to_place.subract(shape_to_attempt_to_place)
+        presents_to_place.subtract(shape_to_attempt_to_place)
         candidates = board.get_candidates_for_shape(shape_to_attempt_to_place)
         for candidate in candidates:
             undo = board.place_candidate(candidate)  # TODO: we can detect if this placement causes contraditions here and move on with searching further
