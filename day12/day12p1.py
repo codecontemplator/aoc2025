@@ -71,8 +71,6 @@ class Board:
         nrows = self.height - self.shape_dim + 1
         ncols = self.width - self.shape_dim + 1
         self.candidates = { (i, j): list(all_shapes) for j in range(nrows) for i in range(ncols) }
-        max_candidates = (width-shape_dim+1) * (height-shape_dim+1) * num_shapes * 4 * 2
-        self.num_candidates = dict([ (shapeindex, max_candidates) for shapeindex in range(num_shapes) ]) # TODO: update this structure when removing candidates and use to see if contraditctions occured
 
     def debug_print(self, title):
         print("--------------------------", title)
