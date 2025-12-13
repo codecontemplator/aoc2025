@@ -162,7 +162,7 @@ def search(board, presents_to_place):
     shapes_to_place = presents_to_place.shapes()
     #print(f"shapes to place", shapes_to_place)
     if len(shapes_to_place) == 0:
-        return True # nothing more to place, we were successful
+        return board # nothing more to place, we were successful
         
     for shape_to_attempt_to_place in shapes_to_place:
         #print(f"trying to place {shape_to_attempt_to_place}")
@@ -173,12 +173,12 @@ def search(board, presents_to_place):
             undo = board.place_candidate(candidate)  # TODO: we can detect if this placement causes contraditions here and move on with searching further
             #board.debug_print("after")
             result = search(board, presents_to_place)
-            if result == True:
-                return True   # success
+            if result is not None:
+                return result   # success
             board.unplace_candidate(undo)
         presents_to_place.add(shape_to_attempt_to_place)
 
-    return False # no candidate was successful
+    return None # no candidate was successful
 
 
 class ShapeCache:    
@@ -200,13 +200,15 @@ shapes, puzzles = parse(lines)
 shapeCache = ShapeCache(shapes)
 num_shapes = len(shapes)
 num_unsolved = 0
-for (width, height), quantities in [puzzles[2]]:    
+for (width, height), quantities in [puzzles[1]]:    
     print(f"puzzle: {width}x{height} {quantities}")
     board = Board(width, height, num_shapes, shapeCache)
     presents_to_place = PresentsToPlace(quantities)
     result = search(board, presents_to_place) 
-    if not result:
+    if result is None:
         num_unsolved += 1
+    else:
+        result.debug_print("solution")
 
 
 print(num_unsolved)
