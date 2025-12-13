@@ -145,7 +145,7 @@ def search(board, presents_to_place):
         candidates = board.get_candidates_for_shape(shape_to_attempt_to_place)
         for candidate in candidates:
             board.place_candidate(candidate)  # TODO: we can detect if this placement causes contraditions here and move on with searching further
-            result = search(board, presents_to_place)  # this does not work
+            result = search(board, presents_to_place)
             if result == True:
                 return True   # success
             board.unplace_candidate(candidate)
