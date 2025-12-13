@@ -66,8 +66,8 @@ class Board:
         max_candidates = (width-shape_dim+1) * (height-shape_dim+1) * num_shapes * 4 * 2
         self.num_candidates = dict([ (shapeindex, max_candidates) for shapeindex in range(num_shapes) ])
 
-    def debug_print(self):
-        print("--------------------------")
+    def debug_print(self, title):
+        print("--------------------------", title)
         for j in range(self.height):
             x = from_binary(self.grid[j], self.width)
             s = "".join(x)
@@ -91,7 +91,8 @@ class Board:
         (i,j), (shapeindex, variant) = candidate
         shape = self.shape_cache.get(shapeindex, variant)
         for h in range(self.shape_dim):
-            bits = shape[h] >> i
+            bits = shape[h] << i
+            assert(bits > 0)
             gridrow = self.grid[h+j]
             if bits & gridrow > 0:
                 return False
@@ -101,23 +102,24 @@ class Board:
         # precondition: enusre that it can be placed (we are placing a candidate so it should be possible)
         assert(self.can_place_candidate(candidate))
         # place!
-        (i,j), (shapeindex, variant) = candidate
+        (pi,pj), (shapeindex, variant) = candidate
         shape = self.shape_cache.get(shapeindex, variant)
         for h in range(self.shape_dim):
-            bits = shape[h] >> i
-            self.grid[h+j] |= bits
+            bits = shape[h] << pi
+            assert(bits > 0)
+            self.grid[h+pj] |= bits
         undo_candidates = {}
         # remove invalidated candidates, check all overlapping tiles        
-        for h in range(self.shape_dim):
-            for w in range(self.shape_dim):
-                jj = j - h
-                ii = i - w
-                if jj < 0 or ii < 0:
-                    continue
-                original_candidates = self.candidates[jj][ii]
-                pos = (ii,jj)
+        for j in range(max(0, pj-self.shape_dim), min(self.height-self.shape_dim+1, pj+self.shape_dim)):
+            for i in range(max(0, pi-self.shape_dim), min(self.width-self.shape_dim+1, pi+self.shape_dim)):     
+                pos = (i,j)
+                try:           
+                    original_candidates = self.candidates[j][i]
+                except:
+                    print("pos = ", pos)
+                    raise Exception("bad index")
                 new_candidates = [ candidate for candidate in original_candidates if self.can_place_candidate((pos,candidate)) ]
-                self.candidates[jj][ii] = new_candidates
+                self.candidates[j][i] = new_candidates
                 undo_candidates[pos] = original_candidates
         # return undo info
         return (candidate, undo_candidates)
@@ -132,7 +134,7 @@ class PresentsToPlace:
         self.shape_counters = shape_counters
 
     def shapes(self):
-        return [ shapeindex for shapeindex in self.shape_counters if self.shape_counters[shapeindex] > 0 ]
+        return [ index for index,count in enumerate(self.shape_counters) if count > 0 ]
     
     def add(self, shapeindex):
         self.shape_counters[shapeindex] += 1
@@ -143,17 +145,21 @@ class PresentsToPlace:
 
 def search(board, presents_to_place):
 
-    board.debug_print()
-
+    print("--------- search")
     shapes_to_place = presents_to_place.shapes()
+    print(f"shapes to place", shapes_to_place)
     if len(shapes_to_place) == 0:
         return True # nothing more to place, we were successful
-
+        
     for shape_to_attempt_to_place in shapes_to_place:
+        print(f"trying to place {shape_to_attempt_to_place}")
         presents_to_place.subtract(shape_to_attempt_to_place)
         candidates = board.get_candidates_for_shape(shape_to_attempt_to_place)
         for candidate in candidates:
+            print(f"candidate {candidate}" )            
+            board.debug_print("before")
             undo = board.place_candidate(candidate)  # TODO: we can detect if this placement causes contraditions here and move on with searching further
+            board.debug_print("after")
             result = search(board, presents_to_place)
             if result == True:
                 return True   # success
