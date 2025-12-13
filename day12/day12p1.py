@@ -30,8 +30,16 @@ def parse(lines):
 def rotate90cw(grid):
     return [list(row) for row in zip(*grid[::-1])]
 
+def rotatecw(grid, count):
+    for _ in range(count):
+        grid = rotate90cw(grid)
+    return grid
+
 def flip(grid):
     return grid[::-1]    
+
+def to_binary(list):
+    return sum([ 2**i for i, ch in enumerate(list) if ch == '#' ])
 
 # def mirror_lr(grid):
 #     return [row[::-1] for row in grid]    
@@ -45,7 +53,9 @@ def print_shape(grid):
         print(grid[j])
 
 class Board:
-    def __init__(self, width, height, num_shapes, shape_dim = 3):
+    def __init__(self, width, height, num_shapes, shape_cache, shape_dim = 3):
+        self.shape_cache = shape_cache
+        self.grid = [ 0 for _ in range(height) ]
         self.shape_dim = shape_dim
         self.width = width
         self.height = height
@@ -72,7 +82,44 @@ class Board:
                     for (shapeindex, variant) in self.candidates[j][i]
                         if shapeindex == shapes_to_place
         ]
-                
+    
+    def can_place_candidate(self, candidate):
+        (i,j), (shapeindex, variant) = candidate
+        shape = self.shape_cache.get(shapeindex, variant)
+        for h in range(self.shape_dim):
+            bits = shape[h] >> i
+            gridrow = self.grid[h+j]
+            if bits & gridrow > 0:
+                return False
+        return True
+
+    def place_candidate(self, candidate):
+        # precondition: enusre that it can be placed (we are placing a candidate so it should be possible)
+        assert(self.can_place_candidate(candidate))
+        # place!
+        (i,j), (shapeindex, variant) = candidate
+        shape = self.shape_cache.get(shapeindex, variant)
+        for h in range(self.shape_dim):
+            bits = shape[h] >> i
+            self.grid[h+j] |= bits
+        undo_candidates = {}
+        # remove invalidated candidates, check all overlapping tiles        
+        for h in range(self.shape_dim):
+            for w in range(self.shape_dim):
+                jj = j - h
+                ii = i - w
+                if jj < 0 or ii < 0:
+                    continue
+                original_candidates = self.candidates[jj][ii]
+                pos = (ii,jj)
+                new_candidates = [ candidate for candidate in original_candidates if self.can_place_candidate((pos,candidate)) ]
+                self.candidates[jj][ii] = new_candidates
+                undo_candidates[pos] = original_candidates
+        # return undo info
+        return (candidate, undo_candidates)
+
+
+
 class PresentsToPlace:
     def __init__(self, shape_counters):
         self.shape_counters = shape_counters
@@ -97,26 +144,39 @@ def search(board, presents_to_place):
         presents_to_place.subtract(shape_to_attempt_to_place)
         candidates = board.get_candidates_for_shape(shape_to_attempt_to_place)
         for candidate in candidates:
-            undo = board.place_candidate(candidate)  # TODO: we can detect if this placement causes contraditions here and move on with searching further
+            board.place_candidate(candidate)  # TODO: we can detect if this placement causes contraditions here and move on with searching further
             result = search(board, presents_to_place)  # this does not work
             if result == True:
                 return True   # success
             presents_to_place.add()
-            board.undo(undo)
+            board.unplace_candidate(candidate)
         presents_to_place.add(shape_to_attempt_to_place)
 
     return False # no candidate was successful
 
 
+class ShapeCache:    
+    def __init__(self, shapes):
+        self.cache = {}
+        for i, shape in enumerate(shapes):
+            for r in range(4):
+                self.cache[(i,(r,0))] = list(map(to_binary, rotatecw(shape, r)))
+            for r in range(4):
+                self.cache[(i,(r,1))] = list(map(to_binary, rotatecw(flip(shape), r)))
+        print(self.cache)
+
+    def get(self, shapeindex, variant):
+        return self.cache[(shapeindex, variant)]
+
 with open('example.txt','r') as f:
     lines = f.read().splitlines()
 
 shapes, puzzles = parse(lines)
-# TODO: we want to create a dictionary (shapeindex, rotation, variant) -> shape as a "global" static data block
+shapeCache = ShapeCache(shapes)
 num_shapes = len(shapes)
 num_unsolved = 0
 for (width, height), quantities in puzzles:    
-    board = Board(width, height, num_shapes)
+    board = Board(width, height, num_shapes, shapeCache)
     presents_to_place = PresentsToPlace(quantities)
     result = search(board, presents_to_place) 
     if not result:
