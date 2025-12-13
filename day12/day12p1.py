@@ -110,8 +110,8 @@ class Board:
         # place!
         (pi,pj), (shapeindex, variant) = candidate
         shape = self.shape_cache.get(shapeindex, variant)
-        print("placing candidate shape ")
-        print_shape(shape)
+        #print("placing candidate shape ")
+        #print_shape(shape)
         for h in range(self.shape_dim):
             bits = shape[h] << pi
             assert(bits > 0)
@@ -121,11 +121,7 @@ class Board:
         for j in range(max(0, pj-self.shape_dim), min(self.height-self.shape_dim+1, pj+self.shape_dim)):
             for i in range(max(0, pi-self.shape_dim), min(self.width-self.shape_dim+1, pi+self.shape_dim)):     
                 pos = (i,j)
-                try:           
-                    original_candidates = self.candidates[j][i]
-                except:
-                    print("pos = ", pos)
-                    raise Exception("bad index")
+                original_candidates = self.candidates[j][i]
                 new_candidates = [ candidate for candidate in original_candidates if self.can_place_candidate((pos,candidate)) ]
                 self.candidates[j][i] = new_candidates
                 undo_candidates[pos] = original_candidates
@@ -162,20 +158,20 @@ class PresentsToPlace:
 
 def search(board, presents_to_place):
 
-    print("--------- search")
+    #print("--------- search")
     shapes_to_place = presents_to_place.shapes()
-    print(f"shapes to place", shapes_to_place)
+    #print(f"shapes to place", shapes_to_place)
     if len(shapes_to_place) == 0:
         return True # nothing more to place, we were successful
         
     for shape_to_attempt_to_place in shapes_to_place:
-        print(f"trying to place {shape_to_attempt_to_place}")
+        #print(f"trying to place {shape_to_attempt_to_place}")
         presents_to_place.subtract(shape_to_attempt_to_place)
         candidates = board.get_candidates_for_shape(shape_to_attempt_to_place)
         for candidate in candidates:
-            board.debug_print("before")
+            #board.debug_print("before")
             undo = board.place_candidate(candidate)  # TODO: we can detect if this placement causes contraditions here and move on with searching further
-            board.debug_print("after")
+            #board.debug_print("after")
             result = search(board, presents_to_place)
             if result == True:
                 return True   # success
@@ -204,7 +200,7 @@ shapes, puzzles = parse(lines)
 shapeCache = ShapeCache(shapes)
 num_shapes = len(shapes)
 num_unsolved = 0
-for (width, height), quantities in [puzzles[1]]:    
+for (width, height), quantities in [puzzles[2]]:    
     print(f"puzzle: {width}x{height} {quantities}")
     board = Board(width, height, num_shapes, shapeCache)
     presents_to_place = PresentsToPlace(quantities)
