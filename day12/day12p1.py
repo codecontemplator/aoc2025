@@ -182,6 +182,7 @@ def search(board, presents_to_place):
 class ShapeCache:    
     def __init__(self, shapes):
         self.cache = {}
+        # todo: shapes might be duplicates after transformation. only keep unique
         for i, shape in enumerate(shapes):
             for r in range(4):
                 self.cache[(i,(r,0))] = list(map(to_binary, rotatecw(shape, r)))
