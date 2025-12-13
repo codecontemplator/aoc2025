@@ -61,12 +61,7 @@ class Board:
         self.shape_dim = shape_dim
         self.width = width
         self.height = height
-        all_shapes = [ 
-            (shapeindex, (rotation, flip)) 
-                for shapeindex in range(num_shapes)
-                    for rotation in range(4)
-                        for flip in range(2)            
-            ]
+        all_shapes = shape_cache.unique_shapes()
         # in the beginning all shapes are candidates for all positions
         nrows = self.height - self.shape_dim + 1
         ncols = self.width - self.shape_dim + 1
@@ -182,16 +177,26 @@ def search(board, presents_to_place):
 class ShapeCache:    
     def __init__(self, shapes):
         self.cache = {}
-        # todo: shapes might be duplicates after transformation. only keep unique
         for i, shape in enumerate(shapes):
+            unqiue_shapes = set()             
             for r in range(4):
-                self.cache[(i,(r,0))] = list(map(to_binary, rotatecw(shape, r)))
-            for r in range(4):
-                self.cache[(i,(r,1))] = list(map(to_binary, rotatecw(flip(shape), r)))
+                for f in range(2):
+                    tmp = shape
+                    if f == 1:
+                        tmp = flip(tmp)
+                    new_shape = list(map(to_binary, rotatecw(tmp, r)))
+                    shape_hash = tuple(new_shape)
+                    if shape_hash not in unqiue_shapes:
+                        self.cache[(i,(r,f))] = new_shape
+                        unqiue_shapes.add(shape_hash)
+            print(f"shape {i} has {len(unqiue_shapes)} variations")
 
     def get(self, shapeindex, variant):
         return self.cache[(shapeindex, variant)]
 
+    def unique_shapes(self):
+        return [ shape for shape in self.cache ]
+    
 with open('example.txt','r') as f:
     lines = f.read().splitlines()
 
