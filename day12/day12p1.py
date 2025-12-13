@@ -148,7 +148,6 @@ def search(board, presents_to_place):
             result = search(board, presents_to_place)  # this does not work
             if result == True:
                 return True   # success
-            presents_to_place.add()
             board.unplace_candidate(candidate)
         presents_to_place.add(shape_to_attempt_to_place)
 
