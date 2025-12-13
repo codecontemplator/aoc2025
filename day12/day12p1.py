@@ -113,7 +113,7 @@ class Board:
 
 
     def unplace_candidate(self, undo):
-        candidate = undo_candidates = undo
+        candidate, undo_candidates = undo
         raise NotImplemented()
     
 class PresentsToPlace:
