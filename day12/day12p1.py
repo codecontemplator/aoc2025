@@ -3,6 +3,9 @@
 # idea: keep track of legal placements for all shapes with variants. when placing a shape re-evaluate the legal placements. 
 # if one of the shapes that are left to place have no legal place left we reach a contradiction
 
+import numbers
+
+
 def parse_region(line):
     dims_raw, quantities_raw = line.split(":")
     dims = tuple(map(int, dims_raw.split("x")))
@@ -46,7 +49,10 @@ def from_binary(x, w = 64):
 
 def print_shape(grid):    
     for j in range(len(grid)):
-        print(grid[j])
+        v = grid[j]
+        if isinstance(v, numbers.Number):
+            v = from_binary(v, 3)
+        print("".join(v))
 
 class Board:
     def __init__(self, width, height, num_shapes, shape_cache, shape_dim = 3):
@@ -104,6 +110,8 @@ class Board:
         # place!
         (pi,pj), (shapeindex, variant) = candidate
         shape = self.shape_cache.get(shapeindex, variant)
+        print("placing candidate shape ")
+        print_shape(shape)
         for h in range(self.shape_dim):
             bits = shape[h] << pi
             assert(bits > 0)
@@ -156,7 +164,6 @@ def search(board, presents_to_place):
         presents_to_place.subtract(shape_to_attempt_to_place)
         candidates = board.get_candidates_for_shape(shape_to_attempt_to_place)
         for candidate in candidates:
-            print(f"candidate {candidate}" )            
             board.debug_print("before")
             undo = board.place_candidate(candidate)  # TODO: we can detect if this placement causes contraditions here and move on with searching further
             board.debug_print("after")
