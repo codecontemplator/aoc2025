@@ -162,7 +162,6 @@ class ShapeCache:
                 self.cache[(i,(r,0))] = list(map(to_binary, rotatecw(shape, r)))
             for r in range(4):
                 self.cache[(i,(r,1))] = list(map(to_binary, rotatecw(flip(shape), r)))
-        print(self.cache)
 
     def get(self, shapeindex, variant):
         return self.cache[(shapeindex, variant)]
@@ -174,7 +173,8 @@ shapes, puzzles = parse(lines)
 shapeCache = ShapeCache(shapes)
 num_shapes = len(shapes)
 num_unsolved = 0
-for (width, height), quantities in puzzles:    
+for (width, height), quantities in [puzzles[0]]:    
+    print(f"puzzle: {width}x{height} {quantities}")
     board = Board(width, height, num_shapes, shapeCache)
     presents_to_place = PresentsToPlace(quantities)
     result = search(board, presents_to_place) 
@@ -182,3 +182,4 @@ for (width, height), quantities in puzzles:
         num_unsolved += 1
 
 
+print(num_unsolved)
