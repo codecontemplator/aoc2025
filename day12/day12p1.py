@@ -41,6 +41,9 @@ def flip(grid):
 def to_binary(x):
     return sum([ 2**i for i, ch in enumerate(x) if ch == '#' ])
 
+def from_binary(x, w = 64):
+    return [ '#' if 2**i & x > 0 else '.' for i in range(w) ]
+
 def print_shape(grid):    
     for j in range(len(grid)):
         print(grid[j])
@@ -62,6 +65,14 @@ class Board:
         self.candidates = [ [ all_shapes for _ in range(width-shape_dim+1)] for _ in range(height-shape_dim+1) ] 
         max_candidates = (width-shape_dim+1) * (height-shape_dim+1) * num_shapes * 4 * 2
         self.num_candidates = dict([ (shapeindex, max_candidates) for shapeindex in range(num_shapes) ])
+
+    def debug_print(self):
+        print("--------------------------")
+        for j in range(self.height):
+            x = from_binary(self.grid[j], self.width)
+            s = "".join(x)
+            print(s)
+        print("--------------------------")
 
     def get_candidates_for_shape(self, shapes_to_place):
         nrows = len(self.candidates)
@@ -131,6 +142,8 @@ class PresentsToPlace:
 
 
 def search(board, presents_to_place):
+
+    board.debug_print()
 
     shapes_to_place = presents_to_place.shapes()
     if len(shapes_to_place) == 0:
