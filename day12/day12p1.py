@@ -38,8 +38,8 @@ def rotatecw(grid, count):
 def flip(grid):
     return grid[::-1]    
 
-def to_binary(list):
-    return sum([ 2**i for i, ch in enumerate(list) if ch == '#' ])
+def to_binary(x):
+    return sum([ 2**i for i, ch in enumerate(x) if ch == '#' ])
 
 def print_shape(grid):    
     for j in range(len(grid)):
@@ -112,7 +112,10 @@ class Board:
         return (candidate, undo_candidates)
 
 
-
+    def unplace_candidate(self, undo):
+        candidate = undo_candidates = undo
+        raise NotImplemented()
+    
 class PresentsToPlace:
     def __init__(self, shape_counters):
         self.shape_counters = shape_counters
@@ -137,11 +140,11 @@ def search(board, presents_to_place):
         presents_to_place.subtract(shape_to_attempt_to_place)
         candidates = board.get_candidates_for_shape(shape_to_attempt_to_place)
         for candidate in candidates:
-            board.place_candidate(candidate)  # TODO: we can detect if this placement causes contraditions here and move on with searching further
+            undo = board.place_candidate(candidate)  # TODO: we can detect if this placement causes contraditions here and move on with searching further
             result = search(board, presents_to_place)
             if result == True:
                 return True   # success
-            board.unplace_candidate(candidate)
+            board.unplace_candidate(undo)
         presents_to_place.add(shape_to_attempt_to_place)
 
     return False # no candidate was successful
@@ -166,7 +169,7 @@ shapes, puzzles = parse(lines)
 shapeCache = ShapeCache(shapes)
 num_shapes = len(shapes)
 num_unsolved = 0
-for (width, height), quantities in [puzzles[0]]:    
+for (width, height), quantities in [puzzles[1]]:    
     print(f"puzzle: {width}x{height} {quantities}")
     board = Board(width, height, num_shapes, shapeCache)
     presents_to_place = PresentsToPlace(quantities)
