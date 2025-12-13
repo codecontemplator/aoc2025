@@ -67,8 +67,10 @@ class Board:
                     for rotation in range(4)
                         for flip in range(2)            
             ]
-        # in the beginning all shapes are candidates for all positions        
-        self.candidates = [ [ all_shapes for _ in range(width-shape_dim+1)] for _ in range(height-shape_dim+1) ] 
+        # in the beginning all shapes are candidates for all positions
+        nrows = self.height - self.shape_dim + 1
+        ncols = self.width - self.shape_dim + 1
+        self.candidates = { (i, j): list(all_shapes) for j in range(nrows) for i in range(ncols) }
         max_candidates = (width-shape_dim+1) * (height-shape_dim+1) * num_shapes * 4 * 2
         self.num_candidates = dict([ (shapeindex, max_candidates) for shapeindex in range(num_shapes) ])
 
@@ -81,16 +83,14 @@ class Board:
         print("--------------------------")
 
     def get_candidates_for_shape(self, shapes_to_place):
-        nrows = len(self.candidates)
-        ncols = len(self.candidates[0])
-        assert(nrows == self.height-self.shape_dim+1)
-        assert(ncols == self.width-self.shape_dim+1)
+        nrows = self.height - self.shape_dim + 1
+        ncols = self.width - self.shape_dim + 1
         return [
-            ((i,j), (shapeindex, variant))
-             for j in range(nrows)
-                for i in range(ncols)
-                    for (shapeindex, variant) in self.candidates[j][i]
-                        if shapeindex == shapes_to_place
+            ((i, j), (shapeindex, variant))
+            for j in range(nrows)
+            for i in range(ncols)
+            for (shapeindex, variant) in self.candidates[(i, j)]
+            if shapeindex == shapes_to_place
         ]
     
     def can_place_candidate(self, candidate):
@@ -121,9 +121,9 @@ class Board:
         for j in range(max(0, pj-self.shape_dim), min(self.height-self.shape_dim+1, pj+self.shape_dim)):
             for i in range(max(0, pi-self.shape_dim), min(self.width-self.shape_dim+1, pi+self.shape_dim)):     
                 pos = (i,j)
-                original_candidates = self.candidates[j][i]
+                original_candidates = self.candidates[pos]
                 new_candidates = [ candidate for candidate in original_candidates if self.can_place_candidate((pos,candidate)) ]
-                self.candidates[j][i] = new_candidates
+                self.candidates[pos] = new_candidates
                 undo_candidates[pos] = original_candidates
         # return undo info
         return (candidate, undo_candidates)
@@ -139,8 +139,7 @@ class Board:
         
         # restore candidates
         for pos, original_candidates in undo_candidates.items():
-            i, j = pos
-            self.candidates[j][i] = original_candidates
+            self.candidates[pos] = original_candidates
     
 class PresentsToPlace:
     def __init__(self, shape_counters):
