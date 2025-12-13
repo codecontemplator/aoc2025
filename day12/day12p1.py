@@ -1,3 +1,8 @@
+# AOC 2025 - Day 12
+
+# idea: keep track of legal placements for all shapes with variants. when placing a shape re-evaluate the legal placements. 
+# if one of the shapes that are left to place have no legal place left we reach a contradiction
+
 def parse_region(line):
     dims_raw, quantities_raw = line.split(":")
     dims = tuple(map(int, dims_raw.split("x")))
@@ -81,7 +86,7 @@ def search(board, presents_to_place):
         presents_to_place.subract(shape_to_attempt_to_place)
         candidates = board.get_candidates_for_shape(shape_to_attempt_to_place)
         for candidate in candidates:
-            undo = board.place_candidate(candidate)
+            undo = board.place_candidate(candidate)  # TODO: we can detect if this placement causes contraditions here and move on with searching further
             result = search(board, presents_to_place)  # this does not work
             if result == True:
                 return True   # success
@@ -91,16 +96,15 @@ def search(board, presents_to_place):
 
     return False # no candidate was successful
 
-# idea: keep track of legal placements for all shapes with variants. when placing a shape re-evaluate the legal placement. 
-# if one of the shapes that are left to place have no legal place left we reach a contradiction
 
 with open('example.txt','r') as f:
     lines = f.read().splitlines()
 
 shapes, puzzles = parse(lines)
+# TODO: we want to create a dictionary (shapeindex, rotation, variant) -> shape as a "global" static data block
 num_shapes = len(shapes)
 num_unsolved = 0
-for (width, height), quantities in puzzles:
+for (width, height), quantities in puzzles:    
     board = Board(width, height, num_shapes)
     presents_to_place = PresentsToPlace(quantities)
     result = search(board, presents_to_place) 
