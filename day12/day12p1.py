@@ -135,7 +135,16 @@ class Board:
 
     def unplace_candidate(self, undo):
         candidate, undo_candidates = undo
-        raise NotImplemented()
+        (pi,pj), (shapeindex, variant) = candidate
+        shape = self.shape_cache.get(shapeindex, variant)
+        for h in range(self.shape_dim):
+            bits = shape[h] << pi
+            self.grid[h+pj] &= ~bits
+        
+        # restore candidates
+        for pos, original_candidates in undo_candidates.items():
+            i, j = pos
+            self.candidates[j][i] = original_candidates
     
 class PresentsToPlace:
     def __init__(self, shape_counters):
