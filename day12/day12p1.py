@@ -25,39 +25,77 @@ def parse(lines):
 def rotate90cw(grid):
     return [list(row) for row in zip(*grid[::-1])]
 
-def mirror_lr(grid):
-    return [row[::-1] for row in grid]    
-    
-def mirror_tb(grid):
+def flip(grid):
     return grid[::-1]    
+
+# def mirror_lr(grid):
+#     return [row[::-1] for row in grid]    
+    
+# def mirror_tb(grid):
+#     return grid[::-1]    
+
 
 def print_shape(grid):    
     for j in range(len(grid)):
         print(grid[j])
 
-with open('example.txt','r') as f:
-    lines = f.read().splitlines()
+class Board:
+    def __init__(self, width, height, shapes, shape_dim = 3):
+        self.width = width
+        self.height = height
+        all_shapes = [ 
+            (shapeindex, rotation, variant) 
+                for shapeindex in range(len(shapes))
+                    for rotation in range(4)
+                        for variant in range(2)            
+            ]
+        # in the beginning all shapes are candidates for all positions        
+        self.candidates = [ [ all_shapes for _ in range(width-shape_dim+1)] for _ in range(height-shape_dim+1) ] 
+        max_candidates = (width-shape_dim+1) * (height-shape_dim+1) * len(shapes) * 4 * 2
+        self.num_candidates = dict([ (shapeindex, max_candidates) for shapeindex in range(len(shapes)) ])
 
-def search(shapes_to_place):
-    shape_to_place = shapes_to_place.select_by_min_available_cancidates()
-    if shape_to_place is None:
-        return True # no more shapes to place, we were successful
+    def get_candidates_for_shape(self, shapes_to_place):
+        return sorted(shapes_to_place, key=lambda shapeindex: self.num_candidates[shapeindex])[0]
+                
+class PresentsToPlace:
+    def __init__(self, shape_counters):
+        self.shape_counters = shape_counters
+
+    def shapes(self):
+        return [ shapeindex for shapeindex in self.shape_counters if self.shape_counters[shapeindex] > 0 ]
     
-    candidates = get_candidates_for_shape(shape_to_place)
-    if len(candidates) == 0:
-        return False # no avaialbe position
+    def add(self, shapeindex):
+        self.shape_counters[shapeindex] += 1
 
-    for candidate in candidates:
-        place(candidate)
-        result = search(...)
-        if result == True:
-            return True   # success
-        unplace(candidate)
+    def subtract(self, shapeindex):
+        self.shape_counters[shapeindex] -= 1
+
+
+def search(board, presents_to_place):
+
+    shapes_to_place = presents_to_place.shapes()
+    if len(shapes_to_place) == 0:
+        return True # nothing more to place, we were successful
+
+    for shape_to_attempt_to_place in shapes_to_place:
+        presents_to_place.subract(shape_to_attempt_to_place)
+        candidates = board.get_candidates_for_shape(shape_to_attempt_to_place)
+        for candidate in candidates:
+            undo = board.place_candidate(candidate)
+            result = search(board, presents_to_place)  # this does not work
+            if result == True:
+                return True   # success
+            presents_to_place.add()
+            board.undo(undo)
+        presents_to_place.add(shape_to_attempt_to_place)
 
     return False # no candidate was successful
 
-# contradictions: min num horizontal/vertical bits to place less than available horitzontal/vertical bits left
-# idea: keep track of legal placements for all shapes with variants. when placing a shape re-evaluate the legal placement. if one of the shapes that are left to place have no legal place left we reach a contradiction
+# idea: keep track of legal placements for all shapes with variants. when placing a shape re-evaluate the legal placement. 
+# if one of the shapes that are left to place have no legal place left we reach a contradiction
+
+with open('example.txt','r') as f:
+    lines = f.read().splitlines()
 
 shapes, regions = parse(lines)
 print_shape(shapes[0])
@@ -69,5 +107,6 @@ print("------------")
 print_shape(mirror_tb(shapes[0]))
 print("------------")
 
+board = initial_board(5,5,shapes)
 #print_shape(shapes[0])
 #print_shape(shapes[1])
