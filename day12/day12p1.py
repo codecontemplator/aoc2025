@@ -41,13 +41,6 @@ def flip(grid):
 def to_binary(list):
     return sum([ 2**i for i, ch in enumerate(list) if ch == '#' ])
 
-# def mirror_lr(grid):
-#     return [row[::-1] for row in grid]    
-    
-# def mirror_tb(grid):
-#     return grid[::-1]    
-
-
 def print_shape(grid):    
     for j in range(len(grid)):
         print(grid[j])
