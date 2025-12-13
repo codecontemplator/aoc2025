@@ -1,8 +1,8 @@
 def parse_region(line):
     dims_raw, quantities_raw = line.split(":")
     dims = tuple(map(int, dims_raw.split("x")))
-    qauntities = list(map(int,quantities_raw.split()))
-    return dims, qauntities
+    quantities = list(map(int,quantities_raw.split()))
+    return dims, quantities
 
 def parse_shape(lines):
     lines.pop(0)
@@ -40,19 +40,19 @@ def print_shape(grid):
         print(grid[j])
 
 class Board:
-    def __init__(self, width, height, shapes, shape_dim = 3):
+    def __init__(self, width, height, num_shapes, shape_dim = 3):
         self.width = width
         self.height = height
         all_shapes = [ 
             (shapeindex, rotation, variant) 
-                for shapeindex in range(len(shapes))
+                for shapeindex in range(num_shapes)
                     for rotation in range(4)
                         for variant in range(2)            
             ]
         # in the beginning all shapes are candidates for all positions        
         self.candidates = [ [ all_shapes for _ in range(width-shape_dim+1)] for _ in range(height-shape_dim+1) ] 
-        max_candidates = (width-shape_dim+1) * (height-shape_dim+1) * len(shapes) * 4 * 2
-        self.num_candidates = dict([ (shapeindex, max_candidates) for shapeindex in range(len(shapes)) ])
+        max_candidates = (width-shape_dim+1) * (height-shape_dim+1) * num_shapes * 4 * 2
+        self.num_candidates = dict([ (shapeindex, max_candidates) for shapeindex in range(num_shapes) ])
 
     def get_candidates_for_shape(self, shapes_to_place):
         return sorted(shapes_to_place, key=lambda shapeindex: self.num_candidates[shapeindex])[0]
@@ -97,16 +97,14 @@ def search(board, presents_to_place):
 with open('example.txt','r') as f:
     lines = f.read().splitlines()
 
-shapes, regions = parse(lines)
-print_shape(shapes[0])
-print("------------")
-print_shape(rotate90cw(shapes[0]))
-print("------------")
-print_shape(mirror_lr(shapes[0]))
-print("------------")
-print_shape(mirror_tb(shapes[0]))
-print("------------")
+shapes, puzzles = parse(lines)
+num_shapes = len(shapes)
+num_unsolved = 0
+for (width, height), quantities in puzzles:
+    board = Board(width, height, num_shapes)
+    presents_to_place = PresentsToPlace(quantities)
+    result = search(board, presents_to_place) 
+    if not result:
+        num_unsolved += 1
 
-board = initial_board(5,5,shapes)
-#print_shape(shapes[0])
-#print_shape(shapes[1])
+
