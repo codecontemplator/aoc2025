@@ -19,11 +19,12 @@ class Node:
 class Column:
     """Column header node with additional metadata."""
     
-    def __init__(self, name=None):
+    def __init__(self, name=None, primary=True):
         self.node = Node()
         self.node.col = self
         self.name = name
         self.size = 0  # Number of nodes in this column
+        self.primary = primary  # True: must be covered exactly once, False: may be covered 0 or 1 times
 
 
 class DLX:
@@ -36,9 +37,16 @@ class DLX:
         self.solutions = []
         self.current_partial = []
     
-    def add_column(self, name=None):
-        """Add a new column to the matrix."""
-        col = Column(name)
+    def add_column(self, name=None, primary=True):
+        """
+        Add a new column to the matrix.
+        
+        Args:
+            name: Optional name for the column
+            primary: True if column must be covered exactly once (default),
+                    False if column may be covered 0 or 1 times
+        """
+        col = Column(name, primary=primary)
         # Insert after header (before header.node.right)
         col.node.right = self.header.node.right
         col.node.left = self.header.node
@@ -88,8 +96,9 @@ class DLX:
     
     def choose_column(self):
         """
-        Choose the column with minimum size (heuristic for Algorithm X).
-        Returns the column with fewest 1s, or None if no columns remain.
+        Choose a primary column with minimum size (heuristic for Algorithm X).
+        Only considers primary columns (those that must be covered).
+        Returns the primary column with fewest 1s, or None if no primary columns remain.
         """
         min_col = None
         min_size = float('inf')
@@ -97,7 +106,8 @@ class DLX:
         col_node = self.header.node.right
         while col_node != self.header.node:
             col = col_node.col
-            if col.size < min_size:
+            # Only consider primary columns
+            if col.primary and col.size < min_size:
                 min_size = col.size
                 min_col = col
             col_node = col_node.right
@@ -162,17 +172,17 @@ class DLX:
         if max_solutions and len(self.solutions) >= max_solutions:
             return
         
-        # Check if all columns are covered
-        if self.header.node.right == self.header.node:
-            # Found a solution
+        # Choose a primary column with minimum size
+        col = self.choose_column()
+        
+        # If no primary columns remain, we have a solution
+        # (all primary columns have been covered exactly once)
+        if col is None:
             self.solutions.append(list(self.current_partial))
             return
         
-        # Choose column with minimum size
-        col = self.choose_column()
-        
         if col.size == 0:
-            # No solution in this branch
+            # No solution in this branch (primary column has no options)
             return
         
         # Cover the column
@@ -215,30 +225,45 @@ class DLX:
 
 # Example usage:
 if __name__ == "__main__":
-    # Example: Classic exact cover problem
-    # Find a set of subsets that cover all elements exactly once
+    # Example 1: Classic exact cover problem (all primary columns)
+    print("Example 1: All primary columns")
+    print("-" * 40)
     
     dlx = DLX()
     
-    # Create columns for elements 1-7
-    cols = [dlx.add_column(f"col{i}") for i in range(7)]
+    # Create columns for elements 1-7 (all primary)
+    cols = [dlx.add_column(f"col{i}", primary=True) for i in range(7)]
     
     # Add rows representing sets
-    # Row 0: covers columns {1, 3, 5}
     dlx.add_row([1, 3, 5], row_id="A")
-    # Row 1: covers columns {2, 3, 6}
     dlx.add_row([2, 3, 6], row_id="B")
-    # Row 2: covers columns {1, 4}
     dlx.add_row([1, 4], row_id="C")
-    # Row 3: covers columns {2, 5}
     dlx.add_row([2, 5], row_id="D")
-    # Row 4: covers columns {3, 6}
     dlx.add_row([3, 6], row_id="E")
-    # Row 5: covers columns {2, 4}
     dlx.add_row([2, 4], row_id="F")
     dlx.add_row([0], row_id="G")
     
     solutions = dlx.solve()
     print(f"Found {len(solutions)} solution(s):")
     for sol in solutions:
+        print(f"  {sol}")
+    
+    # Example 2: Mixed primary and secondary columns
+    print("\nExample 2: Mixed primary and secondary columns")
+    print("-" * 40)
+    
+    dlx2 = DLX()
+    
+    # Create 3 primary columns and 2 secondary columns
+    primary = [dlx2.add_column(f"P{i}", primary=True) for i in range(3)]
+    secondary = [dlx2.add_column(f"S{i}", primary=False) for i in range(2)]
+    
+    # Add rows
+    dlx2.add_row([0, 3], row_id="Row1")     # covers P0, S0
+    dlx2.add_row([1], row_id="Row2")        # covers P1
+    dlx2.add_row([2, 4], row_id="Row3")     # covers P2, S1
+    
+    solutions2 = dlx2.solve()
+    print(f"Found {len(solutions2)} solution(s):")
+    for sol in solutions2:
         print(f"  {sol}")

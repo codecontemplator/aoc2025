@@ -67,8 +67,8 @@ class Solver:
         cache = ShapeCache(shapes)
         n_presents = sum(quantities)
         self.dlxsolver = dlx.DLX()
-        board_columns = [ self.dlxsolver.add_column(f"cell{x}{y}") for y in range(board_height) for x in range(board_width) ]
-        present_columns = [ self.dlxsolver.add_column(f"present{i}") for i in range(n_presents) ] 
+        board_columns = [ self.dlxsolver.add_column(f"cell{x}{y}", primary = False) for y in range(board_height) for x in range(board_width) ]
+        present_columns = [ self.dlxsolver.add_column(f"present{i}", primary = True) for i in range(n_presents) ] 
         print(f"Board columns: {len(board_columns)}, Present columns: {len(present_columns)}, Total: {len(board_columns) + len(present_columns)}")
 
         row_count = 0
@@ -106,7 +106,7 @@ with open('example.txt','r') as f:
 
 shapes, puzzles = parse(lines)
 num_unsolved = 0
-for (width, height), quantities in [puzzles[0]]:    
+for (width, height), quantities in [puzzles[2]]:    
     print(f"puzzle: {width}x{height} {quantities}")
     solver = Solver(shapes, width, height, quantities)
     solutions = solver.solve()
