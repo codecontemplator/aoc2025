@@ -96,7 +96,8 @@ class Solver:
         #print(f"DLX matrix: {len(board_columns) + len(present_columns)} columns, {row_count} rows")
 
     def solve(self):
-        return self.dlxsolver.solve()
+        solutions = self.dlxsolver.solve(max_solutions = 1)
+        return len(solutions) > 0
     
 with open('example.txt','r') as f:
     lines = f.read().splitlines()
@@ -106,12 +107,12 @@ num_unsolved = 0
 for (width, height), quantities in puzzles:    
     print(f"puzzle: {width}x{height} {quantities}")
     solver = Solver(shapes, width, height, quantities)
-    solutions = solver.solve()
-    if len(solutions) == 0:
+    solution_found = solver.solve()
+    if not solution_found:
         num_unsolved += 1
         print("  no solution found")
     else:
-        print(f"  found {len(solutions)} solution(s)")
+        print(f"  solution found")
 
 
 print(num_unsolved)
