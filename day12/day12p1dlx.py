@@ -55,7 +55,7 @@ class ShapeCache:
                     if variant_hash not in unqiue_variants:
                         self.variants[i].append(variant)
                         unqiue_variants.add(variant_hash)
-            print(f"shape {i} has {len(unqiue_variants)} variations")
+            #print(f"shape {i} has {len(unqiue_variants)} variations")
 
     def get_variants(self, shape_index):
         return self.variants[shape_index]
@@ -69,7 +69,7 @@ class Solver:
         self.dlxsolver = dlx.DLX()
         board_columns = [ self.dlxsolver.add_column(f"cell{x}{y}", primary = False) for y in range(board_height) for x in range(board_width) ]
         present_columns = [ self.dlxsolver.add_column(f"present{i}", primary = True) for i in range(n_presents) ] 
-        print(f"Board columns: {len(board_columns)}, Present columns: {len(present_columns)}, Total: {len(board_columns) + len(present_columns)}")
+        #print(f"Board columns: {len(board_columns)}, Present columns: {len(present_columns)}, Total: {len(board_columns) + len(present_columns)}")
 
         row_count = 0
         present_index = 0
@@ -80,23 +80,20 @@ class Solver:
                 for variant in variants:
                     for y in range(board_height - shape_dim + 1):
                         for x in range(board_width - shape_dim + 1):   
-                            print(variant)         
                             row_board = [ 
                                     (y + h) * board_width + (x + w) 
                                     for h in range(shape_dim) 
                                     for w in range(shape_dim) 
                                     if variant[h][w] == '#'
                                 ]
-                            #present_index = sum(quantities[:shape_index]) + qi
                             row_present = [ present_index + len(board_columns) ]
                             row = row_board + row_present
-                            print(f"Add row for shape {shape_index} variant at ({x},{y}) covering cells {row_board} and present {present_index}")
+                            #print(f"Add row for shape {shape_index} variant at ({x},{y}) covering cells {row_board} and present {present_index}")
                             self.dlxsolver.add_row(row, "shape{shape_index}_var{variant}_x{x}_y{y}")  
-                            #present_index += 1
                             row_count += 1
                 present_index += 1
 
-        print(f"DLX matrix: {len(board_columns) + len(present_columns)} columns, {row_count} rows")
+        #print(f"DLX matrix: {len(board_columns) + len(present_columns)} columns, {row_count} rows")
 
     def solve(self):
         return self.dlxsolver.solve()
@@ -106,7 +103,7 @@ with open('example.txt','r') as f:
 
 shapes, puzzles = parse(lines)
 num_unsolved = 0
-for (width, height), quantities in [puzzles[2]]:    
+for (width, height), quantities in puzzles:    
     print(f"puzzle: {width}x{height} {quantities}")
     solver = Solver(shapes, width, height, quantities)
     solutions = solver.solve()
