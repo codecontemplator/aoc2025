@@ -72,11 +72,14 @@ class Solver:
         #print(f"Board columns: {len(board_columns)}, Present columns: {len(present_columns)}, Total: {len(board_columns) + len(present_columns)}")
 
         row_count = 0
-        present_index = 0
+        present_offset = 0
         positions = [ (x, y) for y in range(board_height - shape_dim + 1) for x in range(board_width - shape_dim + 1) ]
         for shape_index in range(len(shapes)):
             variants = cache.get_variants(shape_index)
             quantity = quantities[shape_index]
+#            if (quantity == 0):
+#                continue
+            present_index = 0
             for qi in range(quantity):
                 for (x,y) in positions:
                     for variant in variants:
@@ -86,12 +89,13 @@ class Solver:
                                 for w in range(shape_dim) 
                                 if variant[h][w] == '#'
                             ]
-                        row_present = [ present_index + len(board_columns) ]
+                        row_present = [ present_offset + present_index + len(board_columns) ]
                         row = row_board + row_present
                         #print(f"Add row for shape {shape_index} variant at ({x},{y}) covering cells {row_board} and present {present_index}")
                         self.dlxsolver.add_row(row, "shape{shape_index}_var{variant}_x{x}_y{y}")  
                         row_count += 1
-                present_index += 1
+                    present_index = (present_index + 1) % quantity
+            present_offset += quantity
 
         print(f"DLX matrix: {len(board_columns) + len(present_columns)} columns, {row_count} rows")
 
