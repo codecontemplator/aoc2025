@@ -78,8 +78,8 @@ class Solver:
             variants = cache.get_variants(shape_index)
             quantity = quantities[shape_index]
             for qi in range(quantity):
-                for variant in variants:
-                    for (x,y) in positions:
+                for (x,y) in positions:
+                    for variant in variants:
                         row_board = [ 
                                 (y + h) * board_width + (x + w) 
                                 for h in range(shape_dim) 
