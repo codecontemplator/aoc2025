@@ -1,4 +1,5 @@
 from collections import defaultdict
+from itertools import combinations, product
 import numbers
 import dlx
 
@@ -65,39 +66,48 @@ class Solver:
 
     def __init__(self, shapes, board_width, board_height, quantities, shape_dim = 3):
         cache = ShapeCache(shapes)
-        n_presents = sum(quantities)
+        n_shapes = len(shapes)
         self.dlxsolver = dlx.DLX()
         board_columns = [ self.dlxsolver.add_column(f"cell{x}{y}", primary = False) for y in range(board_height) for x in range(board_width) ]
-        present_columns = [ self.dlxsolver.add_column(f"present{i}", primary = True) for i in range(n_presents) ] 
-        #print(f"Board columns: {len(board_columns)}, Present columns: {len(present_columns)}, Total: {len(board_columns) + len(present_columns)}")
+        shape_columns = [ self.dlxsolver.add_column(f"shape{i}", primary = True) for i in range(n_shapes) if quantities[i] > 0 ]
 
         row_count = 0
-        present_offset = 0
-        positions = [ (x, y) for y in range(board_height - shape_dim + 1) for x in range(board_width - shape_dim + 1) ]
+        shape_column = 0
         for shape_index in range(len(shapes)):
             variants = cache.get_variants(shape_index)
             quantity = quantities[shape_index]
-#            if (quantity == 0):
-#                continue
-            present_index = 0
-            for qi in range(quantity):
-                for (x,y) in positions:
-                    for variant in variants:
-                        row_board = [ 
+            if quantity == 0:
+                continue
+
+            slots = [ (x, y) for y in range(board_height - shape_dim + 1) for x in range(board_width - shape_dim + 1) ]
+
+            candidate_solutions = list(combinations(slots, quantity))
+            for candidate_solution in candidate_solutions:
+                if (len(candidate_solution) != quantity):
+                    raise ValueError("invalid solution length")
+                
+                all_variant_assignments = list(product(range(len(variants)), repeat=len(candidate_solution)))                
+                for variant_assignment in all_variant_assignments:
+                    variant_pos_pair = list( zip(candidate_solution, variant_assignment) )  # [ ((x,y), variant_index), ... ]
+                    row_board = [ 
                                 (y + h) * board_width + (x + w) 
+                                for (x,y), variant_index in variant_pos_pair
                                 for h in range(shape_dim) 
                                 for w in range(shape_dim) 
-                                if variant[h][w] == '#'
-                            ]
-                        row_present = [ present_offset + present_index + len(board_columns) ]
-                        row = row_board + row_present
-                        #print(f"Add row for shape {shape_index} variant at ({x},{y}) covering cells {row_board} and present {present_index}")
-                        self.dlxsolver.add_row(row, "shape{shape_index}_var{variant}_x{x}_y{y}")  
-                        row_count += 1
-                    present_index = (present_index + 1) % quantity
-            present_offset += quantity
+                                if variants[variant_index][h][w] == '#'
+                    ]
+                    row_board_no_duplicates = list(set(row_board)) 
+                    if (len(row_board_no_duplicates) != len(row_board)):
+                        continue  # overlapping shapes in this solution)
 
-        print(f"DLX matrix: {len(board_columns) + len(present_columns)} columns, {row_count} rows")
+                    row = sorted(row_board + [ shape_column + len(board_columns) ])
+
+                    self.dlxsolver.add_row(row, f"shape{shape_index}")  
+                row_count += 1
+            shape_column += 1
+
+
+        print(f"DLX matrix: {len(board_columns) + len(shape_columns)} columns, {row_count} rows")
 
     def solve(self):
         solutions = self.dlxsolver.solve(max_solutions = 1)
