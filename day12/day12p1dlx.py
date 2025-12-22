@@ -73,27 +73,27 @@ class Solver:
 
         row_count = 0
         present_index = 0
+        positions = [ (x, y) for y in range(board_height - shape_dim + 1) for x in range(board_width - shape_dim + 1) ]
         for shape_index in range(len(shapes)):
             variants = cache.get_variants(shape_index)
             quantity = quantities[shape_index]
             for qi in range(quantity):
                 for variant in variants:
-                    for y in range(board_height - shape_dim + 1):
-                        for x in range(board_width - shape_dim + 1):   
-                            row_board = [ 
-                                    (y + h) * board_width + (x + w) 
-                                    for h in range(shape_dim) 
-                                    for w in range(shape_dim) 
-                                    if variant[h][w] == '#'
-                                ]
-                            row_present = [ present_index + len(board_columns) ]
-                            row = row_board + row_present
-                            #print(f"Add row for shape {shape_index} variant at ({x},{y}) covering cells {row_board} and present {present_index}")
-                            self.dlxsolver.add_row(row, "shape{shape_index}_var{variant}_x{x}_y{y}")  
-                            row_count += 1
+                    for (x,y) in positions:
+                        row_board = [ 
+                                (y + h) * board_width + (x + w) 
+                                for h in range(shape_dim) 
+                                for w in range(shape_dim) 
+                                if variant[h][w] == '#'
+                            ]
+                        row_present = [ present_index + len(board_columns) ]
+                        row = row_board + row_present
+                        #print(f"Add row for shape {shape_index} variant at ({x},{y}) covering cells {row_board} and present {present_index}")
+                        self.dlxsolver.add_row(row, "shape{shape_index}_var{variant}_x{x}_y{y}")  
+                        row_count += 1
                 present_index += 1
 
-        #print(f"DLX matrix: {len(board_columns) + len(present_columns)} columns, {row_count} rows")
+        print(f"DLX matrix: {len(board_columns) + len(present_columns)} columns, {row_count} rows")
 
     def solve(self):
         solutions = self.dlxsolver.solve(max_solutions = 1)
